@@ -9,7 +9,7 @@ import TrustedCompanies from "./components/TrustedCompanies";
 import WhyChooseUs from "./components/WhyChooseUs";
 import ContactPage from "./components/ContactPage";
 import Footer from "./components/Footer";
-import StrukturOrganisasi from "./components/Strukturorganisasi";
+import StrukturOrganisasi from "./components/StrukturOrganisasi";
 import LowonganKerja from "./components/LowonganKerja";
 import Album from "./components/Album";
 import ArticlesPage from "./components/Article";
