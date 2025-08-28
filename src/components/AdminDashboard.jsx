@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from "react";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
 
 // Base URL backend untuk API dan menampilkan gambar
 const API_BASE_URL = "http://localhost:5001";
@@ -100,7 +98,6 @@ export default function AdminDashboard() {
         imageUrl: item.imageUrl || "",
       });
       if (item.imageUrl) {
-        // pastikan API_BASE_URL + path benar
         setImagePreview(`${API_BASE_URL}${item.imageUrl}`);
       }
     } else {
@@ -132,12 +129,6 @@ export default function AdminDashboard() {
     setErrors((err) => ({ ...err, [name]: null }));
   };
 
-  // === Handle Quill Editor Change (for article body) ===
-  const handleQuillChange = (value) => {
-    setFormState((s) => ({ ...s, body: value }));
-    setErrors((err) => ({ ...err, body: null }));
-  };
-
   // === Handle Image Upload ===
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -153,11 +144,7 @@ export default function AdminDashboard() {
     if (activeTab === "articles") {
       if (!formState.title || formState.title.trim().length < 3)
         err.title = "Judul minimal 3 karakter";
-      if (
-        !formState.body ||
-        formState.body.trim() === "" ||
-        formState.body === "<p><br></p>"
-      )
+      if (!formState.body || formState.body.trim() === "")
         err.body = "Isi artikel tidak boleh kosong";
     } else {
       if (!formState.posisi || formState.posisi.trim().length < 2)
@@ -251,483 +238,352 @@ export default function AdminDashboard() {
     if (!window.confirm(`Yakin ingin menghapus ${type} ini?`)) return;
 
     try {
-      const endpoint =
+      const response = await fetch(
         activeTab === "articles"
           ? `${API_BASE_URL}/api/articles/${id}`
-          : `${API_BASE_URL}/api/jobs/${id}`;
-      const res = await fetch(endpoint, { method: "DELETE" });
-      if (!res.ok) throw new Error("Gagal menghapus item");
+          : `${API_BASE_URL}/api/jobs/${id}`,
+        { method: "DELETE" }
+      );
+      if (!response.ok) throw new Error("Gagal menghapus data");
+
       if (activeTab === "articles") {
         setArticles((prev) => prev.filter((a) => a.id !== id));
       } else {
         setJobs((prev) => prev.filter((j) => j.id !== id));
       }
-    } catch (err) {
-      console.error(err);
-      alert("Gagal menghapus item. Periksa console untuk detail.");
+    } catch (error) {
+      console.error("Gagal menghapus data:", error);
+      alert("Gagal menghapus data. Periksa console untuk detail.");
     }
   };
 
-  // === Helpers ===
-  const excerpt = (html) => {
-    if (!html) return "";
-    const text = html.replace(/<[^>]+>/g, "");
-    return text.length > 120 ? text.slice(0, 120) + "..." : text;
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-800">
-              Admin Dashboard
-            </h1>
-            <p className="text-sm text-gray-500">Kelola artikel dan lowongan</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Cari artikel / lowongan..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full md:w-64 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
-              />
-            </div>
-            <button
-              onClick={openAddModal}
-              className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm shadow-sm"
-            >
-              Tambah {activeTab === "articles" ? "Artikel" : "Lowongan"}
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
-          {/* Sidebar / Tabs */}
-          <aside className="bg-white rounded-md border border-gray-200 p-4 h-full">
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-700">Menu</h3>
-                <span className="text-xs text-gray-400">
-                  {loading ? "Memuat..." : ""}
-                </span>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => setActiveTab("articles")}
-                  className={`text-left px-3 py-2 rounded-md text-sm ${
-                    activeTab === "articles"
-                      ? "bg-green-50 text-green-700 font-medium"
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  Artikel ({articles.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab("jobs")}
-                  className={`text-left px-3 py-2 rounded-md text-sm ${
-                    activeTab === "jobs"
-                      ? "bg-green-50 text-green-700 font-medium"
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  Lowongan ({jobs.length})
-                </button>
-              </div>
-            </div>
-          </aside>
-
-          {/* Main Content */}
-          <main>
-            {activeTab === "articles" ? (
-              <section>
-                <h2 className="sr-only">Daftar Artikel</h2>
-
-                {filteredArticles.length === 0 && !loading ? (
-                  <div className="bg-white border border-dashed border-gray-200 rounded-md p-6 text-center text-sm text-gray-500">
-                    Tidak ada artikel ditemukan.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredArticles.map((a) => (
-                      <article
-                        key={a.id}
-                        className="bg-white border border-gray-200 rounded-md overflow-hidden shadow-sm flex flex-col"
-                      >
-                        <div className="h-40 sm:h-44 bg-gray-100 flex items-center justify-center overflow-hidden">
-                          {a.imageUrl ? (
-                            // safe image URL
-                            // jika server menyajikan full url atau path, sesuaikan
-                            <img
-                              src={
-                                a.imageUrl.startsWith("http")
-                                  ? a.imageUrl
-                                  : `${API_BASE_URL}${a.imageUrl}`
-                              }
-                              alt={a.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="text-gray-400 text-sm">
-                              No Image
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-4 flex-1 flex flex-col">
-                          <h3 className="text-md font-semibold text-gray-800">
-                            {a.title}
-                          </h3>
-                          <p className="text-xs text-gray-500 mt-2 flex-1">
-                            {excerpt(a.body)}
-                          </p>
-                          <div className="mt-3 flex items-center justify-between gap-2">
-                            <div className="text-xs text-gray-500">
-                              {a.author}
-                            </div>
-                            <div className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
-                              {a.status}
-                            </div>
-                          </div>
-                          <div className="mt-3 flex items-center gap-2">
-                            <button
-                              onClick={() => openEditModal(a)}
-                              className="text-sm px-3 py-1 bg-blue-600 text-white rounded-md"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDelete(a.id)}
-                              className="text-sm px-3 py-1 bg-red-600 text-white rounded-md"
-                            >
-                              Hapus
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
-            ) : (
-              <section>
-                <h2 className="sr-only">Daftar Lowongan</h2>
-
-                {filteredJobs.length === 0 && !loading ? (
-                  <div className="bg-white border border-dashed border-gray-200 rounded-md p-6 text-center text-sm text-gray-500">
-                    Tidak ada lowongan ditemukan.
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {filteredJobs.map((j) => (
-                      <div
-                        key={j.id}
-                        className="bg-white border border-gray-200 rounded-md p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-                      >
-                        <div>
-                          <h3 className="text-md font-semibold text-gray-800">
-                            {j.posisi}
-                          </h3>
-                          <div className="text-sm text-gray-500">
-                            {j.lokasi} • {j.masaKerja || "—"}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-sm text-gray-600">
-                            {j.gaji || "—"}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Deadline: {j.deadline || "—"}
-                          </div>
-                          <button
-                            onClick={() => openEditModal(j)}
-                            className="text-sm px-3 py-1 bg-blue-600 text-white rounded-md"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(j.id)}
-                            className="text-sm px-3 py-1 bg-red-600 text-white rounded-md"
-                          >
-                            Hapus
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-            )}
-          </main>
-        </div>
+    <div className="p-4">
+      {/* Tab Navigation */}
+      <div className="mb-4">
+        <button
+          className={`mr-2 px-4 py-2 ${
+            activeTab === "articles"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700"
+          } rounded`}
+          onClick={() => setActiveTab("articles")}
+        >
+          Artikel
+        </button>
+        <button
+          className={`px-4 py-2 ${
+            activeTab === "jobs"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700"
+          } rounded`}
+          onClick={() => setActiveTab("jobs")}
+        >
+          Lowongan
+        </button>
       </div>
 
-      {/* Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 sm:p-6 text-black">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setModalOpen(false)}
-          />
-          <div className="relative bg-white rounded-md shadow-xl w-full max-w-3xl mx-auto overflow-auto max-h-[90vh]">
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <h3 className="text-lg font-medium text-gray-800">
-                {editItem ? "Edit" : "Tambah"}{" "}
-                {activeTab === "articles" ? "Artikel" : "Lowongan"}
-              </h3>
-              <div className="flex items-center gap-2">
+      {/* Search */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder={`Cari ${
+            activeTab === "articles" ? "artikel" : "lowongan"
+          }`}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full p-2 border border-gray-300 rounded"
+        />
+      </div>
+
+      {/* Data List */}
+      {loading ? (
+        <p>Loading...</p>
+      ) : activeTab === "articles" ? (
+        <ul>
+          {filteredArticles.map((article) => (
+            <li
+              key={article.id}
+              className="mb-2 border rounded p-2 flex justify-between items-center"
+            >
+              <span>{article.title}</span>
+              <div>
                 <button
-                  onClick={() => setModalOpen(false)}
-                  className="text-sm text-gray-500 hover:text-gray-700"
+                  className="mr-2 text-blue-600"
+                  onClick={() => openEditModal(article)}
                 >
-                  Tutup
+                  Edit
+                </button>
+                <button
+                  className="text-red-600"
+                  onClick={() => handleDelete(article.id)}
+                >
+                  Hapus
                 </button>
               </div>
-            </div>
-
-            <form
-              onSubmit={handleFormSubmit}
-              className="p-4 grid grid-cols-1 gap-4"
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ul>
+          {filteredJobs.map((job) => (
+            <li
+              key={job.id}
+              className="mb-2 border rounded p-2 flex justify-between items-center"
             >
-              {/* layout responsive: 1 col mobile, 2 col md */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {activeTab === "articles" ? (
-                  <>
-                    <div className="flex flex-col">
-                      <label className="text-sm text-gray-600">Judul</label>
-                      <input
-                        name="title"
-                        value={formState.title || ""}
-                        onChange={handleInputChange}
-                        className={`mt-1 rounded-md border px-3 py-2 text-sm ${
-                          errors.title ? "border-red-500" : "border-gray-300"
-                        }`}
-                      />
-                      {errors.title && (
-                        <div className="text-xs text-red-600 mt-1">
-                          {errors.title}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col">
-                      <label className="text-sm text-gray-600">Author</label>
-                      <input
-                        name="author"
-                        value={formState.author || ""}
-                        onChange={handleInputChange}
-                        className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-                      />
-                    </div>
-
-                    <div className="md:col-span-2 flex flex-col">
-                      <label className="text-sm text-gray-600">
-                        Isi Artikel
-                      </label>
-                      <div
-                        className={`mt-1 border ${
-                          errors.body ? "border-red-500" : "border-gray-200"
-                        } rounded-md`}
-                      >
-                        <ReactQuill
-                          value={formState.body || ""}
-                          onChange={handleQuillChange}
-                          className="min-h-[160px] md:min-h-[220px]"
-                        />
-                      </div>
-                      {errors.body && (
-                        <div className="text-xs text-red-600 mt-1">
-                          {errors.body}
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="text-sm text-gray-600">
-                        Tanggal Publish
-                      </label>
-                      <input
-                        type="date"
-                        name="publishDate"
-                        value={formState.publishDate || ""}
-                        onChange={handleInputChange}
-                        className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-                      />
-                    </div>
-
-                    <div className="flex flex-col">
-                      <label className="text-sm text-gray-600">Status</label>
-                      <select
-                        name="status"
-                        value={formState.status || "draft"}
-                        onChange={handleInputChange}
-                        className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-                      >
-                        <option value="draft">Draft</option>
-                        <option value="published">Published</option>
-                        <option value="archived">Archived</option>
-                      </select>
-                    </div>
-
-                    <div className="md:col-span-2 flex flex-col">
-                      <label className="text-sm text-gray-600">
-                        Gambar (opsional)
-                      </label>
-                      <div className="mt-2 flex items-center gap-3">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageChange}
-                          className="text-sm"
-                        />
-                        {imagePreview && (
-                          <img
-                            src={imagePreview}
-                            alt="preview"
-                            className="h-20 w-28 object-cover rounded-md border"
-                          />
-                        )}
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  // JOB FORM
-                  <>
-                    <div className="flex flex-col ">
-                      <label className="text-sm text-gray-600">Posisi</label>
-                      <input
-                        name="posisi"
-                        value={formState.posisi || ""}
-                        onChange={handleInputChange}
-                        className={`mt-1 rounded-md border px-3 py-2 text-sm ${
-                          errors.posisi ? "border-red-500" : "border-gray-300"
-                        }`}
-                      />
-                      {errors.posisi && (
-                        <div className="text-xs text-red-600 mt-1">
-                          {errors.posisi}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col">
-                      <label className="text-sm text-gray-600">Lokasi</label>
-                      <input
-                        name="lokasi"
-                        value={formState.lokasi || ""}
-                        onChange={handleInputChange}
-                        className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-                      />
-                    </div>
-
-                    <div className="flex flex-col">
-                      <label className="text-sm text-gray-600">
-                        Masa Kerja
-                      </label>
-                      <input
-                        name="masaKerja"
-                        value={formState.masaKerja || ""}
-                        onChange={handleInputChange}
-                        className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-                      />
-                    </div>
-
-                    <div className="flex flex-col">
-                      <label className="text-sm text-gray-600">Gaji</label>
-                      <input
-                        name="gaji"
-                        value={formState.gaji || ""}
-                        onChange={handleInputChange}
-                        className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-                      />
-                    </div>
-
-                    <div className="flex flex-col md:col-span-2">
-                      <label className="text-sm text-gray-600">Deadline</label>
-                      <input
-                        type="date"
-                        name="deadline"
-                        value={formState.deadline || ""}
-                        onChange={handleInputChange}
-                        className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-                      />
-                    </div>
-
-                    <div className="md:col-span-2 flex flex-col">
-                      <label className="text-sm text-gray-600">
-                        Cara Kirim Lamaran
-                      </label>
-                      <input
-                        name="kirimlamaran"
-                        value={formState.kirimlamaran || ""}
-                        onChange={handleInputChange}
-                        className={`mt-1 rounded-md border px-3 py-2 text-sm ${
-                          errors.kirimlamaran
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }`}
-                      />
-                      {errors.kirimlamaran && (
-                        <div className="text-xs text-red-600 mt-1">
-                          {errors.kirimlamaran}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="md:col-span-2 flex flex-col">
-                      <label className="text-sm text-gray-600">
-                        Persyaratan (pisah baris)
-                      </label>
-                      <textarea
-                        name="persyaratan"
-                        value={formState.persyaratan || ""}
-                        onChange={handleInputChange}
-                        className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm min-h-[100px]"
-                      />
-                    </div>
-
-                    <div className="md:col-span-2 flex flex-col">
-                      <label className="text-sm text-gray-600">
-                        Benefit (pisah baris)
-                      </label>
-                      <textarea
-                        name="benefit"
-                        value={formState.benefit || ""}
-                        onChange={handleInputChange}
-                        className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm min-h-[80px]"
-                      />
-                    </div>
-
-                    <div className="flex flex-col">
-                      <label className="text-sm text-gray-600">Status</label>
-                      <select
-                        name="status"
-                        value={formState.status || "active"}
-                        onChange={handleInputChange}
-                        className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-                      >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                      </select>
-                    </div>
-                  </>
-                )}
+              <span>{job.posisi}</span>
+              <div>
+                <button
+                  className="mr-2 text-blue-600"
+                  onClick={() => openEditModal(job)}
+                >
+                  Edit
+                </button>
+                <button
+                  className="text-red-600"
+                  onClick={() => handleDelete(job.id)}
+                >
+                  Hapus
+                </button>
               </div>
+            </li>
+          ))}
+        </ul>
+      )}
 
-              <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
+      {/* Modal Form */}
+      {modalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-25 flex justify-center items-center z-50">
+          <div className="bg-white rounded p-6 w-full max-w-3xl max-h-[90vh] overflow-auto">
+            <h2 className="text-xl mb-4">
+              {editItem
+                ? `Edit ${activeTab === "articles" ? "Artikel" : "Lowongan"}`
+                : `Tambah ${activeTab === "articles" ? "Artikel" : "Lowongan"}`}
+            </h2>
+
+            <form onSubmit={handleFormSubmit}>
+              {activeTab === "articles" ? (
+                <>
+                  <div className="mb-4">
+                    <label className="block mb-1">Judul</label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={formState.title || ""}
+                      onChange={handleInputChange}
+                      className={`w-full p-2 border rounded ${
+                        errors.title ? "border-red-500" : "border-gray-300"
+                      }`}
+                    />
+                    {errors.title && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.title}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block mb-1">Penulis</label>
+                    <input
+                      type="text"
+                      name="author"
+                      value={formState.author || ""}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded border-gray-300"
+                      disabled
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block mb-1">Status</label>
+                    <select
+                      name="status"
+                      value={formState.status || "draft"}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded border-gray-300"
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                    </select>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block mb-1">Tanggal Terbit</label>
+                    <input
+                      type="date"
+                      name="publishDate"
+                      value={formState.publishDate || ""}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded border-gray-300"
+                    />
+                  </div>
+
+                  {/* GANTI DARI React Quill KE textarea biasa */}
+                  <div className="mb-4">
+                    <label className="block mb-1">Isi Artikel</label>
+                    <textarea
+                      name="body"
+                      value={formState.body || ""}
+                      onChange={handleInputChange}
+                      className={`w-full p-2 h-40 border rounded resize-y ${
+                        errors.body ? "border-red-500" : "border-gray-300"
+                      }`}
+                    />
+                    {errors.body && (
+                      <p className="text-red-500 text-sm mt-1">{errors.body}</p>
+                    )}
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block mb-1">Gambar</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                    {imagePreview && (
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="mt-2 max-h-40"
+                      />
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <label className="block mb-1">Posisi</label>
+                    <input
+                      type="text"
+                      name="posisi"
+                      value={formState.posisi || ""}
+                      onChange={handleInputChange}
+                      className={`w-full p-2 border rounded ${
+                        errors.posisi ? "border-red-500" : "border-gray-300"
+                      }`}
+                    />
+                    {errors.posisi && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.posisi}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block mb-1">Lokasi</label>
+                    <input
+                      type="text"
+                      name="lokasi"
+                      value={formState.lokasi || ""}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded border-gray-300"
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block mb-1">Masa Kerja</label>
+                    <input
+                      type="text"
+                      name="masaKerja"
+                      value={formState.masaKerja || ""}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded border-gray-300"
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block mb-1">Gaji</label>
+                    <input
+                      type="text"
+                      name="gaji"
+                      value={formState.gaji || ""}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded border-gray-300"
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block mb-1">Deadline</label>
+                    <input
+                      type="date"
+                      name="deadline"
+                      value={formState.deadline || ""}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded border-gray-300"
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block mb-1">Cara Kirim Lamaran</label>
+                    <input
+                      type="text"
+                      name="kirimlamaran"
+                      value={formState.kirimlamaran || ""}
+                      onChange={handleInputChange}
+                      className={`w-full p-2 border rounded ${
+                        errors.kirimlamaran
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      }`}
+                    />
+                    {errors.kirimlamaran && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.kirimlamaran}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block mb-1">
+                      Persyaratan (pisah tiap baris)
+                    </label>
+                    <textarea
+                      name="persyaratan"
+                      value={formState.persyaratan || ""}
+                      onChange={handleInputChange}
+                      className="w-full p-2 h-24 border rounded resize-y border-gray-300"
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block mb-1">
+                      Benefit (pisah tiap baris)
+                    </label>
+                    <textarea
+                      name="benefit"
+                      value={formState.benefit || ""}
+                      onChange={handleInputChange}
+                      className="w-full p-2 h-24 border rounded resize-y border-gray-300"
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block mb-1">Status</label>
+                    <select
+                      name="status"
+                      value={formState.status || "active"}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded border-gray-300"
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+                </>
+              )}
+
+              <div className="flex justify-end gap-2">
                 <button
                   type="button"
+                  className="px-4 py-2 border rounded"
                   onClick={closeModal}
-                  className="text-sm px-3 py-2 bg-white border border-gray-300 rounded-md"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="text-sm px-3 py-2 bg-green-600 text-white rounded-md"
+                  className="px-4 py-2 bg-blue-600 text-white rounded"
                 >
                   Simpan
                 </button>
