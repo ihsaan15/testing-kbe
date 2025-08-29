@@ -32,7 +32,7 @@ const Header = () => {
         <div className="flex items-center space-x-3">
           <a href="/" className="flex items-center">
             <img
-              src="src/assets/logo/logo-kbr-copy.png" // ganti sesuai path logo kamu
+              src="/assets/logo/logo-kbr-copy.png" // ganti sesuai path logo kamu
               alt="PT. Kaltim Banua Etam"
               className="w-10 h-10 object-contain"
               onError={(e) => {
