@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 export default function ContactPage() {
-  const backgroundUrl = "src/assets/bg-green.jpg";
+  const backgroundUrl = "/assets/bg-green.jpg";
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
