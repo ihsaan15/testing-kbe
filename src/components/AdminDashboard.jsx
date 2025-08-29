@@ -1,10 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 // Base URL backend untuk API dan menampilkan gambar
 const API_BASE_URL = "http://localhost:5001";
 
+function getId(item) {
+  return item.id ?? item._id ?? null;
+}
+
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState("articles");
+  const [activeTab, setActiveTab] = useState("articles"); // "articles" atau "jobs"
   const [articles, setArticles] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,34 +21,69 @@ export default function AdminDashboard() {
   const [imagePreview, setImagePreview] = useState(null);
   const [errors, setErrors] = useState({});
 
+  const createdObjectUrlRef = useRef(null);
+
   // === Fetch Data from API ===
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchData = async () => {
       try {
         setLoading(true);
         const [articlesRes, jobsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/articles`),
-          fetch(`${API_BASE_URL}/api/jobs`),
+          fetch(`${API_BASE_URL}/api/articles`, { signal: controller.signal }),
+          fetch(`${API_BASE_URL}/api/jobs`, { signal: controller.signal }),
         ]);
+
+        if (!articlesRes.ok) {
+          const txt = await articlesRes.text();
+          throw new Error("Error fetch articles: " + txt);
+        }
+        if (!jobsRes.ok) {
+          const txt = await jobsRes.text();
+          throw new Error("Error fetch jobs: " + txt);
+        }
+
         const articlesData = await articlesRes.json();
         const jobsData = await jobsRes.json();
         setArticles(Array.isArray(articlesData) ? articlesData : []);
         setJobs(Array.isArray(jobsData) ? jobsData : []);
       } catch (error) {
-        console.error("Gagal mengambil data:", error);
-        alert("Gagal memuat data. Cek koneksi / server.");
+        if (error.name !== "AbortError") {
+          console.error("Gagal mengambil data:", error);
+          alert(
+            "Gagal memuat data. Cek koneksi / server. Lihat console untuk detail."
+          );
+        }
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
+
+    return () => controller.abort();
   }, []);
 
-  // Reset form when modal closed
+  // Cleanup object URL ketika component unmount
+  useEffect(() => {
+    return () => {
+      if (createdObjectUrlRef.current) {
+        URL.revokeObjectURL(createdObjectUrlRef.current);
+        createdObjectUrlRef.current = null;
+      }
+    };
+  }, []);
+
+  // Reset form ketika modal ditutup
   useEffect(() => {
     if (!modalOpen) {
       setFormState({});
       setImageFile(null);
+      if (createdObjectUrlRef.current) {
+        URL.revokeObjectURL(createdObjectUrlRef.current);
+        createdObjectUrlRef.current = null;
+      }
       setImagePreview(null);
       setErrors({});
       setEditItem(null);
@@ -98,7 +137,16 @@ export default function AdminDashboard() {
         imageUrl: item.imageUrl || "",
       });
       if (item.imageUrl) {
-        setImagePreview(`${API_BASE_URL}${item.imageUrl}`);
+        const url =
+          item.imageUrl.startsWith("http") || item.imageUrl.startsWith("//")
+            ? item.imageUrl
+            : `${API_BASE_URL.replace(/\/$/, "")}/${item.imageUrl.replace(
+                /^\//,
+                ""
+              )}`;
+        setImagePreview(url);
+      } else {
+        setImagePreview(null);
       }
     } else {
       setFormState({
@@ -131,10 +179,24 @@ export default function AdminDashboard() {
 
   // === Handle Image Upload ===
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0] ?? null;
     if (file) {
       setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+
+      // revoke previous object URL jika ada
+      if (createdObjectUrlRef.current) {
+        URL.revokeObjectURL(createdObjectUrlRef.current);
+      }
+      const objUrl = URL.createObjectURL(file);
+      createdObjectUrlRef.current = objUrl;
+      setImagePreview(objUrl);
+    } else {
+      setImageFile(null);
+      if (createdObjectUrlRef.current) {
+        URL.revokeObjectURL(createdObjectUrlRef.current);
+        createdObjectUrlRef.current = null;
+      }
+      setImagePreview(null);
     }
   };
 
@@ -150,7 +212,7 @@ export default function AdminDashboard() {
       if (!formState.posisi || formState.posisi.trim().length < 2)
         err.posisi = "Posisi minimal 2 karakter";
       if (!formState.kirimlamaran || formState.kirimlamaran.trim() === "")
-        err.kirimlamaran = "Tentukan cara kirim lamaran";
+        err.kirimlamaran = "Tentukan cara kirim lamaran (email/link)";
     }
     setErrors(err);
     return Object.keys(err).length === 0;
@@ -165,60 +227,72 @@ export default function AdminDashboard() {
       if (activeTab === "articles") {
         const formData = new FormData();
         Object.keys(formState).forEach((key) => {
-          if (formState[key] !== undefined && key !== "imageUrl")
+          if (formState[key] !== undefined && key !== "imageUrl") {
             formData.append(key, formState[key]);
+          }
         });
         if (imageFile) {
           formData.append("image", imageFile);
         }
 
-        const response = await fetch(
-          editItem
-            ? `${API_BASE_URL}/api/articles/${editItem.id}`
-            : `${API_BASE_URL}/api/articles`,
-          { method: editItem ? "PUT" : "POST", body: formData }
-        );
-        const result = await response.json();
+        const url = editItem
+          ? `${API_BASE_URL}/api/articles/${getId(editItem)}`
+          : `${API_BASE_URL}/api/articles`;
+
+        const response = await fetch(url, {
+          method: editItem ? "PUT" : "POST",
+          body: formData,
+        });
+
+        const result = await response.json().catch(() => ({}));
         if (!response.ok)
           throw new Error(result.message || "Gagal menyimpan artikel");
 
+        // Update state
         if (editItem) {
           setArticles((prev) =>
-            prev.map((a) => (a.id === editItem.id ? result : a))
+            prev.map((p) => (getId(p) === getId(editItem) ? result : p))
           );
         } else {
           setArticles((prev) => [result, ...prev]);
         }
       } else {
-        const jobData = {
-          ...formState,
+        // jobs (JSON)
+        const payload = {
+          posisi: formState.posisi,
+          lokasi: formState.lokasi,
+          masaKerja: formState.masaKerja,
+          gaji: formState.gaji,
+          deadline: formState.deadline,
+          kirimlamaran: formState.kirimlamaran,
           persyaratan: (formState.persyaratan || "")
             .split("\n")
-            .map((l) => l.trim())
-            .filter((l) => l),
+            .map((s) => s.trim())
+            .filter(Boolean),
           benefit: (formState.benefit || "")
             .split("\n")
-            .map((l) => l.trim())
-            .filter((l) => l),
+            .map((s) => s.trim())
+            .filter(Boolean),
+          status: formState.status || "active",
         };
 
-        const response = await fetch(
-          editItem
-            ? `${API_BASE_URL}/api/jobs/${editItem.id}`
-            : `${API_BASE_URL}/api/jobs`,
-          {
-            method: editItem ? "PUT" : "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(jobData),
-          }
-        );
-        const result = await response.json();
+        const url = editItem
+          ? `${API_BASE_URL}/api/jobs/${getId(editItem)}`
+          : `${API_BASE_URL}/api/jobs`;
+
+        const response = await fetch(url, {
+          method: editItem ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const result = await response.json().catch(() => ({}));
         if (!response.ok)
-          throw new Error(result.message || "Gagal menyimpan lowongan");
+          throw new Error(result.message || "Gagal menyimpan job");
 
         if (editItem) {
           setJobs((prev) =>
-            prev.map((j) => (j.id === editItem.id ? result : j))
+            prev.map((p) => (getId(p) === getId(editItem) ? result : p))
           );
         } else {
           setJobs((prev) => [result, ...prev]);
@@ -226,368 +300,467 @@ export default function AdminDashboard() {
       }
 
       closeModal();
-    } catch (error) {
-      console.error("Gagal menyimpan data:", error);
-      alert("Gagal menyimpan data. Periksa console untuk detail.");
+    } catch (err) {
+      console.error("Error submit:", err);
+      alert("Gagal menyimpan. Lihat console untuk detail.");
     }
   };
 
-  // === Delete Item ===
-  const handleDelete = async (id) => {
-    const type = activeTab === "articles" ? "artikel" : "lowongan";
-    if (!window.confirm(`Yakin ingin menghapus ${type} ini?`)) return;
-
+  // === Delete ===
+  const handleDelete = async (item) => {
+    if (!window.confirm("Hapus item ini?")) return;
     try {
-      const response = await fetch(
+      const url =
         activeTab === "articles"
-          ? `${API_BASE_URL}/api/articles/${id}`
-          : `${API_BASE_URL}/api/jobs/${id}`,
-        { method: "DELETE" }
-      );
-      if (!response.ok) throw new Error("Gagal menghapus data");
+          ? `${API_BASE_URL}/api/articles/${getId(item)}`
+          : `${API_BASE_URL}/api/jobs/${getId(item)}`;
+
+      const res = await fetch(url, { method: "DELETE" });
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(txt || "Gagal menghapus");
+      }
 
       if (activeTab === "articles") {
-        setArticles((prev) => prev.filter((a) => a.id !== id));
+        setArticles((prev) => prev.filter((p) => getId(p) !== getId(item)));
       } else {
-        setJobs((prev) => prev.filter((j) => j.id !== id));
+        setJobs((prev) => prev.filter((p) => getId(p) !== getId(item)));
       }
-    } catch (error) {
-      console.error("Gagal menghapus data:", error);
-      alert("Gagal menghapus data. Periksa console untuk detail.");
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Gagal menghapus. Lihat console.");
     }
+  };
+
+  // === Toggle status (publish / draft / active) ===
+  const handleToggleStatus = async (item) => {
+    try {
+      const id = getId(item);
+      const targetUrl =
+        activeTab === "articles"
+          ? `${API_BASE_URL}/api/articles/${id}`
+          : `${API_BASE_URL}/api/jobs/${id}`;
+
+      // Flip status locally and send patch
+      const newStatus =
+        activeTab === "articles"
+          ? item.status === "published"
+            ? "draft"
+            : "published"
+          : item.status === "active"
+          ? "inactive"
+          : "active";
+
+      const response = await fetch(targetUrl, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(result.message || "Gagal update status");
+
+      if (activeTab === "articles") {
+        setArticles((prev) => prev.map((p) => (getId(p) === id ? result : p)));
+      } else {
+        setJobs((prev) => prev.map((p) => (getId(p) === id ? result : p)));
+      }
+    } catch (err) {
+      console.error("Toggle status error:", err);
+      alert("Gagal mengganti status. Lihat console.");
+    }
+  };
+
+  // === Helpers ===
+  const getImageSrc = (imageUrl) => {
+    if (!imageUrl) return null;
+    return imageUrl.startsWith("http") || imageUrl.startsWith("//")
+      ? imageUrl
+      : `${API_BASE_URL.replace(/\/$/, "")}/${imageUrl.replace(/^\//, "")}`;
   };
 
   return (
-    <div className="p-4">
-      {/* Tab Navigation */}
-      <div className="mb-4">
-        <button
-          className={`mr-2 px-4 py-2 ${
-            activeTab === "articles"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200 text-gray-700"
-          } rounded`}
-          onClick={() => setActiveTab("articles")}
-        >
-          Artikel
-        </button>
-        <button
-          className={`px-4 py-2 ${
-            activeTab === "jobs"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200 text-gray-700"
-          } rounded`}
-          onClick={() => setActiveTab("jobs")}
-        >
-          Lowongan
-        </button>
+    <div className="min-h-screen bg-white text-black">
+      <div className="max-w-6xl mx-auto p-6">
+        <header className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <div className="flex border rounded overflow-hidden">
+              <button
+                onClick={() => setActiveTab("articles")}
+                className={`px-4 py-2 ${
+                  activeTab === "articles" ? "bg-gray-100" : "bg-transparent"
+                }`}
+              >
+                Articles
+              </button>
+              <button
+                onClick={() => setActiveTab("jobs")}
+                className={`px-4 py-2 ${
+                  activeTab === "jobs" ? "bg-gray-100" : "bg-transparent"
+                }`}
+              >
+                Jobs
+              </button>
+            </div>
+
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="border px-3 py-2 rounded w-48 text-sm"
+            />
+
+            <button
+              onClick={openAddModal}
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm"
+            >
+              Add
+            </button>
+          </div>
+        </header>
+
+        <main>
+          {loading ? (
+            <div className="text-center py-20">Loading...</div>
+          ) : activeTab === "articles" ? (
+            <div>
+              {filteredArticles.length === 0 ? (
+                <div className="text-center text-gray-600 py-12">
+                  Tidak ada artikel.
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {filteredArticles.map((a) => (
+                    <div
+                      key={getId(a)}
+                      className="flex items-center justify-between border rounded p-3 bg-white"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-20 h-14 bg-gray-100 flex-shrink-0 overflow-hidden rounded">
+                          {a.imageUrl ? (
+                            // show resolved src
+                            <img
+                              src={getImageSrc(a.imageUrl)}
+                              alt={a.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
+                              No Image
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-medium">{a.title}</div>
+                          <div className="text-xs text-gray-600">
+                            {a.author} •{" "}
+                            {a.publishDate ? a.publishDate.split("T")[0] : "-"}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm px-3 py-1 rounded border text-gray-700">
+                          {a.status || "-"}
+                        </span>
+                        <button
+                          onClick={() => openEditModal(a)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleToggleStatus(a)}
+                          className="px-3 py-1 bg-yellow-500 text-white rounded text-sm"
+                        >
+                          Toggle
+                        </button>
+                        <button
+                          onClick={() => handleDelete(a)}
+                          className="px-3 py-1 bg-red-600 text-white rounded text-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              {filteredJobs.length === 0 ? (
+                <div className="text-center text-gray-600 py-12">
+                  Tidak ada lowongan.
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {filteredJobs.map((j) => (
+                    <div
+                      key={getId(j)}
+                      className="flex items-center justify-between border rounded p-3 bg-white"
+                    >
+                      <div>
+                        <div className="font-medium">{j.posisi}</div>
+                        <div className="text-xs text-gray-600">
+                          {j.lokasi} • Deadline:{" "}
+                          {j.deadline ? j.deadline.split("T")[0] : "-"}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm px-3 py-1 rounded border text-gray-700">
+                          {j.status || "-"}
+                        </span>
+                        <button
+                          onClick={() => openEditModal(j)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleToggleStatus(j)}
+                          className="px-3 py-1 bg-yellow-500 text-white rounded text-sm"
+                        >
+                          Toggle
+                        </button>
+                        <button
+                          onClick={() => handleDelete(j)}
+                          className="px-3 py-1 bg-red-600 text-white rounded text-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </main>
       </div>
 
-      {/* Search */}
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder={`Cari ${
-            activeTab === "articles" ? "artikel" : "lowongan"
-          }`}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded"
-        />
-      </div>
-
-      {/* Data List */}
-      {loading ? (
-        <p>Loading...</p>
-      ) : activeTab === "articles" ? (
-        <ul>
-          {filteredArticles.map((article) => (
-            <li
-              key={article.id}
-              className="mb-2 border rounded p-2 flex justify-between items-center"
-            >
-              <span>{article.title}</span>
-              <div>
-                <button
-                  className="mr-2 text-blue-600"
-                  onClick={() => openEditModal(article)}
-                >
-                  Edit
-                </button>
-                <button
-                  className="text-red-600"
-                  onClick={() => handleDelete(article.id)}
-                >
-                  Hapus
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <ul>
-          {filteredJobs.map((job) => (
-            <li
-              key={job.id}
-              className="mb-2 border rounded p-2 flex justify-between items-center"
-            >
-              <span>{job.posisi}</span>
-              <div>
-                <button
-                  className="mr-2 text-blue-600"
-                  onClick={() => openEditModal(job)}
-                >
-                  Edit
-                </button>
-                <button
-                  className="text-red-600"
-                  onClick={() => handleDelete(job.id)}
-                >
-                  Hapus
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Modal Form */}
+      {/* Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-25 flex justify-center items-center z-50">
-          <div className="bg-white rounded p-6 w-full max-w-3xl max-h-[90vh] overflow-auto">
-            <h2 className="text-xl mb-4">
-              {editItem
-                ? `Edit ${activeTab === "articles" ? "Artikel" : "Lowongan"}`
-                : `Tambah ${activeTab === "articles" ? "Artikel" : "Lowongan"}`}
-            </h2>
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={closeModal}
+            aria-hidden
+          />
+          <div className="relative z-10 w-full max-w-2xl mx-4 bg-white text-black rounded shadow-lg">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="font-semibold">
+                {editItem ? "Edit" : "Add"}{" "}
+                {activeTab === "articles" ? "Article" : "Job"}
+              </h2>
+              <button onClick={closeModal} className="text-gray-600 px-2">
+                ✕
+              </button>
+            </div>
 
-            <form onSubmit={handleFormSubmit}>
+            <form onSubmit={handleFormSubmit} className="p-4 space-y-4">
               {activeTab === "articles" ? (
                 <>
-                  <div className="mb-4">
-                    <label className="block mb-1">Judul</label>
+                  <div>
+                    <label className="block text-sm font-medium">Title</label>
                     <input
-                      type="text"
                       name="title"
                       value={formState.title || ""}
                       onChange={handleInputChange}
-                      className={`w-full p-2 border rounded ${
-                        errors.title ? "border-red-500" : "border-gray-300"
-                      }`}
+                      className="mt-1 block w-full border px-3 py-2 rounded"
                     />
                     {errors.title && (
-                      <p className="text-red-500 text-sm mt-1">
+                      <div className="text-sm text-red-600 mt-1">
                         {errors.title}
-                      </p>
+                      </div>
                     )}
                   </div>
 
-                  <div className="mb-4">
-                    <label className="block mb-1">Penulis</label>
-                    <input
-                      type="text"
-                      name="author"
-                      value={formState.author || ""}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded border-gray-300"
-                      disabled
-                    />
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block mb-1">Status</label>
-                    <select
-                      name="status"
-                      value={formState.status || "draft"}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded border-gray-300"
-                    >
-                      <option value="draft">Draft</option>
-                      <option value="published">Published</option>
-                    </select>
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block mb-1">Tanggal Terbit</label>
-                    <input
-                      type="date"
-                      name="publishDate"
-                      value={formState.publishDate || ""}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded border-gray-300"
-                    />
-                  </div>
-
-                  {/* GANTI DARI React Quill KE textarea biasa */}
-                  <div className="mb-4">
-                    <label className="block mb-1">Isi Artikel</label>
+                  <div>
+                    <label className="block text-sm font-medium">Body</label>
                     <textarea
                       name="body"
                       value={formState.body || ""}
                       onChange={handleInputChange}
-                      className={`w-full p-2 h-40 border rounded resize-y ${
-                        errors.body ? "border-red-500" : "border-gray-300"
-                      }`}
+                      rows={6}
+                      className="mt-1 block w-full border px-3 py-2 rounded"
                     />
                     {errors.body && (
-                      <p className="text-red-500 text-sm mt-1">{errors.body}</p>
+                      <div className="text-sm text-red-600 mt-1">
+                        {errors.body}
+                      </div>
                     )}
                   </div>
 
-                  <div className="mb-4">
-                    <label className="block mb-1">Gambar</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium">
+                        Author
+                      </label>
+                      <input
+                        name="author"
+                        value={formState.author || ""}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full border px-3 py-2 rounded"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium">
+                        Publish Date
+                      </label>
+                      <input
+                        name="publishDate"
+                        type="date"
+                        value={formState.publishDate || ""}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full border px-3 py-2 rounded"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium">Image</label>
                     <input
                       type="file"
                       accept="image/*"
                       onChange={handleImageChange}
+                      className="mt-1"
                     />
                     {imagePreview && (
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="mt-2 max-h-40"
-                      />
+                      <div className="mt-2 w-48 h-32 border rounded overflow-hidden">
+                        <img
+                          src={imagePreview}
+                          alt="preview"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                     )}
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className="px-4 py-2 rounded border"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-blue-600 text-white rounded"
+                    >
+                      Save
+                    </button>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="mb-4">
-                    <label className="block mb-1">Posisi</label>
+                  <div>
+                    <label className="block text-sm font-medium">Posisi</label>
                     <input
-                      type="text"
                       name="posisi"
                       value={formState.posisi || ""}
                       onChange={handleInputChange}
-                      className={`w-full p-2 border rounded ${
-                        errors.posisi ? "border-red-500" : "border-gray-300"
-                      }`}
+                      className="mt-1 block w-full border px-3 py-2 rounded"
                     />
                     {errors.posisi && (
-                      <p className="text-red-500 text-sm mt-1">
+                      <div className="text-sm text-red-600 mt-1">
                         {errors.posisi}
-                      </p>
+                      </div>
                     )}
                   </div>
 
-                  <div className="mb-4">
-                    <label className="block mb-1">Lokasi</label>
-                    <input
-                      type="text"
-                      name="lokasi"
-                      value={formState.lokasi || ""}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded border-gray-300"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium">
+                        Lokasi
+                      </label>
+                      <input
+                        name="lokasi"
+                        value={formState.lokasi || ""}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full border px-3 py-2 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">
+                        Deadline
+                      </label>
+                      <input
+                        name="deadline"
+                        type="date"
+                        value={formState.deadline || ""}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full border px-3 py-2 rounded"
+                      />
+                    </div>
                   </div>
 
-                  <div className="mb-4">
-                    <label className="block mb-1">Masa Kerja</label>
+                  <div>
+                    <label className="block text-sm font-medium">
+                      Cara kirim lamaran (email/link)
+                    </label>
                     <input
-                      type="text"
-                      name="masaKerja"
-                      value={formState.masaKerja || ""}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded border-gray-300"
-                    />
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block mb-1">Gaji</label>
-                    <input
-                      type="text"
-                      name="gaji"
-                      value={formState.gaji || ""}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded border-gray-300"
-                    />
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block mb-1">Deadline</label>
-                    <input
-                      type="date"
-                      name="deadline"
-                      value={formState.deadline || ""}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded border-gray-300"
-                    />
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block mb-1">Cara Kirim Lamaran</label>
-                    <input
-                      type="text"
                       name="kirimlamaran"
                       value={formState.kirimlamaran || ""}
                       onChange={handleInputChange}
-                      className={`w-full p-2 border rounded ${
-                        errors.kirimlamaran
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      }`}
+                      className="mt-1 block w-full border px-3 py-2 rounded"
                     />
                     {errors.kirimlamaran && (
-                      <p className="text-red-500 text-sm mt-1">
+                      <div className="text-sm text-red-600 mt-1">
                         {errors.kirimlamaran}
-                      </p>
+                      </div>
                     )}
                   </div>
 
-                  <div className="mb-4">
-                    <label className="block mb-1">
-                      Persyaratan (pisah tiap baris)
+                  <div>
+                    <label className="block text-sm font-medium">
+                      Persyaratan (satu per baris)
                     </label>
                     <textarea
                       name="persyaratan"
                       value={formState.persyaratan || ""}
                       onChange={handleInputChange}
-                      className="w-full p-2 h-24 border rounded resize-y border-gray-300"
+                      rows={4}
+                      className="mt-1 block w-full border px-3 py-2 rounded"
                     />
                   </div>
 
-                  <div className="mb-4">
-                    <label className="block mb-1">
-                      Benefit (pisah tiap baris)
+                  <div>
+                    <label className="block text-sm font-medium">
+                      Benefit (satu per baris)
                     </label>
                     <textarea
                       name="benefit"
                       value={formState.benefit || ""}
                       onChange={handleInputChange}
-                      className="w-full p-2 h-24 border rounded resize-y border-gray-300"
+                      rows={3}
+                      className="mt-1 block w-full border px-3 py-2 rounded"
                     />
                   </div>
 
-                  <div className="mb-4">
-                    <label className="block mb-1">Status</label>
-                    <select
-                      name="status"
-                      value={formState.status || "active"}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded border-gray-300"
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className="px-4 py-2 rounded border"
                     >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-blue-600 text-white rounded"
+                    >
+                      Save
+                    </button>
                   </div>
                 </>
               )}
-
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  className="px-4 py-2 border rounded"
-                  onClick={closeModal}
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded"
-                >
-                  Simpan
-                </button>
-              </div>
             </form>
           </div>
         </div>
