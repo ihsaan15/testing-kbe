@@ -9,37 +9,37 @@ import React, { useEffect, useRef, useState } from "react";
 const photos = [
   {
     id: 1,
-    src: "src/assets/Technicians_Opencut_Coal_Mine.png",
+    src: "/assets/Technicians_Opencut_Coal_Mine.png",
     title: "Proyek Penambangan",
     description: "Kegiatan operasional proyek penambangan tahap pertama.",
   },
   {
     id: 2,
-    src: "src/assets/lapangan2.jpg",
+    src: "/assets/lapangan2.jpg",
     title: "Tim Profesional",
     description: "Tim profesional kami saat meeting lapangan.",
   },
   {
     id: 3,
-    src: "src/assets/Agin-8-1.jpg",
+    src: "/assets/Agin-8-1.jpg",
     title: "Keselamatan Kerja",
     description: "Penekanan pentingnya keselamatan kerja di lapangan.",
   },
   {
     id: 4,
-    src: "src/assets/fotokbe3.jpg",
+    src: "/assets/fotokbe3.jpg",
     title: "Peralatan Modern",
     description: "Penggunaan alat berat modern untuk efisiensi.",
   },
   {
     id: 5,
-    src: "src/assets/fotosampleair.jpg",
+    src: "/assets/fotosampleair.jpg",
     title: "Area Tambang",
     description: "Pemandangan area tambang yang sedang beroperasi.",
   },
   {
     id: 6,
-    src: "src/assets/136-lakevermont-2021-approved-048-hr-jpg.jpg",
+    src: "/assets/136-lakevermont-2021-approved-048-hr-jpg.jpg",
     title: "Rapat Strategi",
     description: "Rapat strategi perusahaan untuk pengembangan bisnis.",
   },

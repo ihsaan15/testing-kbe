@@ -10,7 +10,7 @@ const images = [
 ];
 
 const HeroSection = () => {
-  const backgroundUrl = "src/assets/img1.jpg";
+  const backgroundUrl = "/assets/img1.jpg";
   const [currentIndex, setCurrentIndex] = useState(0);
   const [contentVisible, setContentVisible] = useState(false);
   const [imageVisible, setImageVisible] = useState(false);
@@ -46,7 +46,7 @@ const HeroSection = () => {
         >
           <div className="flex items-center justify-center lg:justify-start space-x-3 mb-4 pt-20 md:pt-10 lg:pt-0">
             <img
-              src="src/assets/logo/logo-kbr-copy.png"
+              src="/assets/logo/logo-kbr-copy.png"
               alt="Logo PT Kaltim Banua Etam"
               className={`w-12 h-12 object-contain border-2 rounded-md bg-white ${baseTransitionClasses} ${
                 contentVisible
@@ -175,7 +175,7 @@ const HeroSection = () => {
             }`}
             style={{ transitionDelay: "900ms" }}
           >
-            <img src="src/assets/tmng.svg" alt="Logo" className="w-6 h-6" />
+            <img src="/assets/tmng.svg" alt="Logo" className="w-6 h-6" />
             <div>
               <div className="font-semibold text-sm text-gray-900">
                 100 % Safety Certified

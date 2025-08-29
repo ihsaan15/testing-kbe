@@ -84,7 +84,7 @@ const PemimpinPerusahaan = () => {
     <AnimateOnScroll className="mb-16 max-w-screen mx-auto bg-white rounded-lg shadow-lg p-8 flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
       <div className="md:w-1/3 flex justify-center">
         <img
-          src="src/assets/02b46_ikat.jpg"
+          src="/assets/02b46_ikat.jpg"
           alt="Yusuf T Silambi"
           className="rounded-lg shadow-md max-w-full h-auto"
         />
@@ -117,7 +117,7 @@ export default function StrukturOrganisasi() {
     { id: 3, nama: "Komisaris 2", jabatan: "Komisaris" },
     { id: 4, nama: "Komisaris 3", jabatan: "Komisaris" },
   ];
-  const backgroundUrl = "src/assets/bg-green1v1.jpg";
+  const backgroundUrl = "/assets/bg-green1v1.jpg";
 
   return (
     <div
@@ -191,7 +191,7 @@ export default function StrukturOrganisasi() {
             </h2>
             <div className="flex justify-center mb-6">
               <img
-                src="src/assets/fotokantorkbe.jpg"
+                src="/assets/fotokantorkbe.jpg"
                 alt="Sejarah Perusahaan PT. Kaltim Banua Etam"
                 className="w-full max-w-md rounded-lg shadow-md object-cover"
               />
@@ -233,7 +233,7 @@ export default function StrukturOrganisasi() {
             Struktur Organisasi
           </h2>
           <img
-            src="src/assets/struktur-organisasi-versi2.jpg"
+            src="/assets/struktur-organisasi-versi2.jpg"
             alt="Struktur Organisasi PT. Kaltim Banua Etam"
             className="mx-auto max-w-full h-auto"
           />

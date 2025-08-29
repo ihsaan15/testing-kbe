@@ -116,7 +116,7 @@ const WhyChooseUs = () => {
       {/* Right section: Image */}
       <div className="flex-1 max-w-sm w-full">
         <img
-          src="/src/assets/fotokbe3.jpg"
+          src="/assets/fotokbe3.jpg"
           alt="Worker in Safety Gear"
           className="rounded-lg shadow-lg object-cover w-full h-48 sm:h-64 md:h-80 lg:h-96"
         />

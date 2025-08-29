@@ -92,7 +92,7 @@ const FeatureItem = ({ title, description }) => (
 );
 
 const TrustedExpertisePage = () => {
-  const backgroundUrl = "src/assets/bg-darkgreenc.jpg";
+  const backgroundUrl = "/assets/bg-darkgreenc.jpg";
   return (
     <div
       className="w-full mx-auto p-4 sm:p-6 md:p-12 font-sans text-white overflow-x-hidden"
@@ -124,7 +124,7 @@ const TrustedExpertisePage = () => {
         {/* Left Image */}
         <AnimateOnScroll className="flex-1 max-w-full sm:max-w-md md:max-w-lg mb-6 md:mb-3 md:ml-32">
           <img
-            src="/src/assets/fotokbe1.jpg"
+            src="/assets/fotokbe1.jpg"
             alt="Pekerja pertambangan"
             className="rounded-lg object-cover w-full max-h-[220px] sm:max-h-[300px] md:max-h-[400px] shadow-md"
           />

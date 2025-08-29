@@ -1,36 +1,36 @@
 import React, { useEffect, useRef } from "react";
 
 const companies = [
-  { name: "KPC", logoSrc: "/src/assets/logo/logo-kpc.png", alt: "KPC Logo" },
-  { name: "PAMA", logoSrc: "/src/assets/logo/logo-pama.png", alt: "PAMA Logo" },
+  { name: "KPC", logoSrc: "/assets/logo/logo-kpc.png", alt: "KPC Logo" },
+  { name: "PAMA", logoSrc: "/assets/logo/logo-pama.png", alt: "PAMA Logo" },
   {
     name: "Darma Henwa",
-    logoSrc: "/src/assets/logo/logo-darmahenwa.png",
+    logoSrc: "/assets/logo/logo-darmahenwa.png",
     alt: "Darma Henwa Logo",
   },
   {
     name: "Trakindo CAT",
-    logoSrc: "/src/assets/logo/logo-trakindo.png",
+    logoSrc: "/assets/logo/logo-trakindo.png",
     alt: "Trakindo CAT Logo",
   },
   {
     name: "Hexindo",
-    logoSrc: "/src/assets/logo/logo-hexindo.png",
+    logoSrc: "/assets/logo/logo-hexindo.png",
     alt: "Hexindo Logo",
   },
   {
     name: "PT United Tractors",
-    logoSrc: "/src/assets/logo/logo-ut.png",
+    logoSrc: "/assets/logo/logo-ut.png",
     alt: "PT United Tractors Logo",
   },
   {
     name: "PT AEL",
-    logoSrc: "/src/assets/logo/logo-ael.png",
+    logoSrc: "/assets/logo/logo-ael.png",
     alt: "PT AEL Logo",
   },
   {
     name: "PT Intecs",
-    logoSrc: "/src/assets/logo/logo-intecs.png",
+    logoSrc: "/assets/logo/logo-intecs.png",
     alt: "PT Intecs Logo",
   },
 ];
