@@ -94,7 +94,7 @@ const reasons = [
 
 const WhyChooseUs = () => {
   return (
-    <div className="bg-gray-100 py-12 px-4 sm:px-6 md:px-12 lg:px-20 w-full min-h-screen flex flex-col md:flex-row items-center justify-center gap-10 md:gap-20">
+    <div className="bg-gray-100 py-12 px-4 sm:px-6 md:px-12 lg:px-20 w-full  flex flex-col md:flex-row items-center justify-center gap-10 md:gap-20">
       {/* Left section: Reasons */}
       <div className="flex-1 max-w-md space-y-6">
         <h2 className="text-black text-2xl sm:text-3xl font-semibold mb-8 text-center md:text-left">

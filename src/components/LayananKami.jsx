@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef } from "react";
 
 const services = [
   {
@@ -34,68 +34,131 @@ const services = [
 ];
 
 const LayananKami = () => {
-  const [visible, setVisible] = useState(false);
+  const titleRef = useRef(null);
+  const descRef = useRef(null);
+  const cardsRef = useRef([]);
+
+  // helper untuk menyimpan refs dari cards
+  const addCardRef = (el) => {
+    if (el && !cardsRef.current.includes(el)) {
+      cardsRef.current.push(el);
+    }
+  };
 
   useEffect(() => {
-    // Aktifkan transisi setelah mount
-    const t = setTimeout(() => setVisible(true), 80);
-    return () => clearTimeout(t);
+    if (typeof window === "undefined") return;
+
+    const options = {
+      root: null,
+      rootMargin: "0px 0px -10% 0px",
+      threshold: 0.12,
+    };
+
+    const io = new IntersectionObserver((entries, observer) => {
+      entries.forEach((entry) => {
+        const el = entry.target;
+        if (entry.isIntersecting) {
+          // tambahkan kelas untuk mengaktifkan transisi Tailwind
+          el.classList.add("opacity-100", "translate-y-0");
+          el.classList.remove("opacity-0", "translate-y-6");
+
+          // jika ada data-index gunakan untuk delay
+          const idx = el.dataset.index ? Number(el.dataset.index) : 0;
+          // fallback delay (jika belum di-set di style)
+          if (!el.style.transitionDelay) {
+            el.style.transitionDelay = `${idx * 80}ms`;
+          }
+
+          // stop observing supaya animasi hanya jalan sekali
+          observer.unobserve(el);
+        }
+      });
+    }, options);
+
+    // observe title & desc
+    if (titleRef.current) {
+      // set initial styles via className (Tailwind)
+      titleRef.current.classList.add(
+        "transition-all",
+        "duration-700",
+        "ease-out",
+        "transform",
+        "opacity-0",
+        "translate-y-6"
+      );
+      // slight delay
+      titleRef.current.style.transitionDelay = "100ms";
+      io.observe(titleRef.current);
+    }
+    if (descRef.current) {
+      descRef.current.classList.add(
+        "transition-all",
+        "duration-700",
+        "ease-out",
+        "transform",
+        "opacity-0",
+        "translate-y-6"
+      );
+      descRef.current.style.transitionDelay = "180ms";
+      io.observe(descRef.current);
+    }
+
+    // observe each card
+    cardsRef.current.forEach((card, idx) => {
+      if (!card) return;
+      card.dataset.index = String(idx);
+      // set initial Tailwind classes for hidden state
+      card.classList.add(
+        "transition-all",
+        "duration-700",
+        "ease-out",
+        "transform",
+        "opacity-0",
+        "translate-y-6"
+      );
+      // set style delay (stagger)
+      card.style.transitionDelay = `${240 + idx * 80}ms`;
+      io.observe(card);
+    });
+
+    return () => io.disconnect();
   }, []);
 
-  // kelas dasar transisi untuk tiap elemen
-  const base = "transition-all duration-700 ease-out transform";
-
   return (
-    <div className="w-full bg-gray-100 min-h-screen">
+    <div className="w-full bg-gray-100 ">
       <div
-        className="max-w-7xl mx-auto p-6 md:p-12 font-sans text-gray-900"
+        className="max-w-7xl mx-auto p-6 md:p-12 font-sans text-gray-900 layanankami"
         id="layanankami"
       >
-        <h2
-          className={`${base} text-3xl font-bold text-center mb-2 mt-7`}
-          style={{
-            opacity: visible ? 1 : 0,
-            transform: visible ? "translateY(0px)" : "translateY(12px)",
-            transitionDelay: visible ? "100ms" : "0ms",
-          }}
-        >
+        <h2 ref={titleRef} className="text-3xl font-bold text-center mb-2 mt-7">
           Layanan Kami
         </h2>
 
         <p
-          className={`${base} text-center text-gray-700 mb-12 max-w-3xl mx-auto`}
-          style={{
-            opacity: visible ? 1 : 0,
-            transform: visible ? "translateY(0px)" : "translateY(12px)",
-            transitionDelay: visible ? "180ms" : "0ms",
-          }}
+          ref={descRef}
+          className="text-center text-gray-700 mb-12 max-w-3xl mx-auto"
         >
           Kami menyediakan berbagai jenis tenaga kerja spesialis untuk memenuhi
           kebutuhan operasional pertambangan Anda dengan pengaturan pasokan yang
           fleksibel.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-full mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-full mx-auto services-grid">
           {services.map(({ imgSrc, description }, idx) => {
-            // stagger: setiap kartu delay bertambah ~80-100ms
-            const delay = 240 + idx * 80; // ms
             return (
               <div
                 key={idx}
-                className={`${base} flex bg-white shadow rounded-lg overflow-hidden w-full`}
-                style={{
-                  opacity: visible ? 1 : 0,
-                  transform: visible ? "translateY(0px)" : "translateY(18px)",
-                  transitionDelay: visible ? `${delay}ms` : "0ms",
-                }}
+                ref={addCardRef}
+                data-index={idx}
+                className="flex bg-white shadow rounded-lg overflow-hidden w-full service-card"
               >
                 <img
                   src={imgSrc}
-                  alt={`service-${idx}`}
-                  className="w-32 object-cover"
+                  alt={`layanan-${idx}`}
+                  className="w-32 object-cover service-img"
                   loading="lazy"
                 />
-                <p className="p-4 text-gray-800 flex items-center">
+                <p className="p-4 text-gray-800 flex items-center service-desc">
                   {description}
                 </p>
               </div>

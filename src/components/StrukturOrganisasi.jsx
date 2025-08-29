@@ -127,6 +127,7 @@ export default function StrukturOrganisasi() {
     >
       <div className="max-w-5xl mx-auto mt-12">
         {/* Visi dan Misi */}
+        {/* Visi dan Misi (lebih lebar, misi tanpa ikon) */}
         <AnimateOnScroll className="mb-16 text-center">
           <h1 className="text-3xl font-bold text-black mb-6 mt-16">
             Membangun Indonesia <span className="text-green-600">Bersama</span>
@@ -136,23 +137,48 @@ export default function StrukturOrganisasi() {
             proyek konstruksi sipil dan pertambangan di Indonesia.
           </p>
 
-          <div className="flex flex-col md:flex-row md:justify-center md:space-x-12 space-y-8 md:space-y-0 text-black mt-16">
-            <div className="md:w-1/2 bg-white rounded-lg shadow-2xl p-6">
-              <h2 className="text-4xl font-bold mb-4 mt-6">Visi</h2>
-              <p className="text-lg mt-10 text-gray-900 text-center mx-5">
-                Menjadi Perusahaan manufaktur, jasa dan tenaga kerja yang
-                terbaik di Indonesia
-              </p>
-            </div>
-            <div className="md:w-1/2 bg-white rounded-lg shadow-2xl p-6">
-              <h2 className="text-4xl font-bold mb-4 mt-4">Misi</h2>
-              <ul className="list-disc list-inside space-y-2 text-lg text-left text-gray-900 mt-10 mx-5 mb-10">
-                <li>Selalu mengutamakan kualitas dan kepuasan konsumen</li>
-                <li>
-                  Memupuk budaya yang mengutamakan keselamatan, kesehatan, dan
-                  lingkungan dalam segala aktivitasnya
-                </li>
-              </ul>
+          <div className="mt-12 flex justify-center">
+            <div
+              className="w-full max-w-7xl bg-white rounded-lg shadow-2xl p-10 grid gap-8
+                 md:grid-cols-2 items-start text-black"
+              role="region"
+              aria-labelledby="visi-misi-title"
+            >
+              <h2 id="visi-misi-title" className="sr-only">
+                Visi dan Misi
+              </h2>
+
+              {/* Kolom Visi */}
+              <div className="flex flex-col items-start pr-6">
+                <h3 className="text-4xl font-extrabold mb-4 ">Visi</h3>
+                <p className="text-lg text-gray-900 leading-relaxed text-left">
+                  Menjadi perusahaan manufaktur, jasa, dan penyedia tenaga kerja
+                  terbaik di Indonesia, yang berfokus pada kualitas,
+                  keselamatan, dan inovasi.
+                </p>
+              </div>
+
+              {/* Kolom Misi (tanpa ikon) */}
+              <div className="flex flex-col items-start pl-6 md:pl-10 text-left">
+                <h3 className="text-4xl font-extrabold mb-4">Misi</h3>
+
+                <div className="space-y-4 text-lg text-gray-900">
+                  <p>
+                    Selalu mengutamakan kualitas dan kepuasan konsumen dalam
+                    setiap proyek.
+                  </p>
+
+                  <p>
+                    Memupuk budaya yang mengutamakan keselamatan, kesehatan, dan
+                    lingkungan.
+                  </p>
+
+                  <p>
+                    Meningkatkan kapasitas SDM melalui pelatihan dan
+                    pengembangan berkelanjutan.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </AnimateOnScroll>
@@ -215,7 +241,7 @@ export default function StrukturOrganisasi() {
 
         {/* Dewan Direksi */}
         <AnimateOnScroll className="mb-16">
-          <h1 className="text-3xl font-bold text-white mb-6 text-center mt-32">
+          <h1 className="text-3xl font-bold text-white mb-24 text-center mt-32">
             Dewan Direksi dan Komisaris
           </h1>
 

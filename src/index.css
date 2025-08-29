@@ -16,15 +16,6 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* a {
-  font-weight: 500;
-  color: #0f0b33;
-  text-decoration: inherit;
-} */
-/* a:hover {
-  color: #535bf2;
-} */
-
 body {
   margin: 0;
   display: flex;
@@ -49,13 +40,6 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
 }
-/* button:hover {
-  border-color: #646cff;
-} */
-/* button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-} */
 
 @media (prefers-color-scheme: light) {
   :root {
@@ -67,5 +51,77 @@ button:focus-visible {
   }
   button {
     background-color: #f9f9f9;
+  }
+}
+
+@media (min-width: 1920px) {
+  :root {
+    /* optional: scale base font slightly */
+    font-size: 18px;
+  }
+
+  .hero-container {
+    max-width: 1600px;
+    padding-left: 4rem;
+    padding-right: 4rem;
+  }
+
+  .hero-title {
+    font-size: 3.5rem; /* sesuaikan */
+    line-height: 1.05;
+  }
+
+  .hero-slider img {
+    max-height: 800px;
+    aspect-ratio: 16 / 9;
+  }
+
+  .hero-right {
+    margin-left: 5rem; /* ganti lg:ml-36 jika perlu */
+  }
+
+  /* Container utama layanan: lebarkan dan beri padding lebih besar */
+  .layanankami {
+    max-width: 1600px; /* gunakan ruang layar besar */
+    padding-left: 4rem;
+    padding-right: 4rem;
+  }
+
+  /* Grid: pastikan tiga kolom tetap, tapi beri gap lebih besar */
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem; /* lebih lega di layar besar */
+  }
+
+  /* Kartu layanan: ubah menjadi baris (image + text) dengan ukuran gambar lebih besar */
+  .service-card {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .service-card .service-img {
+    flex: 0 0 220px; /* fixed width image */
+    width: 220px;
+    height: auto;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .service-card .service-desc {
+    font-size: 1.05rem;
+    line-height: 1.45;
+    display: flex;
+    align-items: center;
+    min-height: 120px; /* menjaga ketinggian kartu lebih konsisten */
+    padding: 0.75rem 1rem;
+  }
+
+  /* Opsional: sedikit peningkatan shadow / radius pada layar besar */
+  .service-card {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
   }
 }

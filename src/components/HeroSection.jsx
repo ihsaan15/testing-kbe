@@ -34,7 +34,7 @@ const HeroSection = () => {
       className="bg-cover bg-center min-h-screen flex items-center px-4 sm:px-8 py-10 sm:py-16"
       style={{ backgroundImage: `url(${backgroundUrl})` }}
     >
-      <div className="container mx-auto flex flex-col lg:flex-row items-center gap-8 w-full max-w-[1200px]">
+      <div className="container mx-auto hero-container flex flex-col lg:flex-row items-center gap-8 w-full max-w-[1200px]">
         {/* Left Content */}
         <div
           className={`flex-1 max-w-full sm:max-w-md lg:max-w-lg text-center lg:text-left px-2 sm:px-0 ${baseTransitionClasses} ${
@@ -68,7 +68,7 @@ const HeroSection = () => {
           </div>
 
           <h1
-            className={`text-3xl sm:text-4xl md:text-5xl font-extrabold text-white leading-snug max-w-full sm:max-w-xl mx-auto lg:mx-0 break-words ${baseTransitionClasses} ${
+            className={`text-3xl sm:text-4xl md:text-5xl hero-title font-extrabold text-white leading-snug max-w-full sm:max-w-xl mx-auto lg:mx-0 break-words ${baseTransitionClasses} ${
               contentVisible
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-6"
@@ -107,10 +107,10 @@ const HeroSection = () => {
               Hubungi
             </Link>
             <Link
-              to="/album"
+              to="/tentang-kami"
               className="bg-white border border-green-600 text-green-700 py-2 px-6 rounded-md hover:bg-gray-400 hover:text-white transition duration-300 w-auto inline-block text-center"
             >
-              Lihat Dokumentasi
+              Tentang Kami
             </Link>
           </div>
 
@@ -148,25 +148,27 @@ const HeroSection = () => {
         </div>
 
         {/* Right Content - Slider */}
-        <div className="flex-1 relative max-w-full sm:max-w-lg px-4 sm:px-0 lg:mt-10">
+        <div className="flex-1 relative max-w-full sm:max-w-lg px-4 sm:px-0 lg:mt-10 lg:ml-36  ">
           {images.map((src, index) => (
             <img
               key={index}
               src={src}
               alt={`Slide ${index}`}
-              className={`rounded-lg shadow-lg w-full object-cover aspect-[4/3] absolute top-0 left-0 transition-opacity duration-1200 lg:ml-36
-                ${
-                  index === currentIndex && imageVisible
-                    ? "opacity-100 relative"
-                    : "opacity-0"
-                }
-              `}
-              style={{ maxHeight: "320px", width: "100%", objectFit: "cover" }}
+              className={`rounded-lg shadow-lg w-full object-cover absolute top-0 left-0 transition-opacity duration-[1200ms]
+        ${
+          index === currentIndex && imageVisible
+            ? "opacity-100 relative"
+            : "opacity-0"
+        }
+      `}
+              style={{
+                maxHeight: "320px",
+              }} /* ukuran default untuk layar kecil/menengah; min-width:1920 di index.css akan override */
             />
           ))}
 
           <div
-            className={`absolute bottom-4 left-4 bg-white rounded-md shadow-md p-3 flex items-center space-x-3 w-max max-w-xs lg:ml-32 ${baseTransitionClasses} ${
+            className={`absolute bottom-4 left-4 bg-white rounded-md shadow-md p-3 flex items-center space-x-3 w-max max-w-xs ${baseTransitionClasses} ${
               contentVisible
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-6"
