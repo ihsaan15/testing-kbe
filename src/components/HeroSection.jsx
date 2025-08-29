@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 const images = [
-  "/src/assets/hero/lapangan1.jpg",
-  "/src/assets/hero/rekrutmen.jpg",
-  "/src/assets/hero/fotokbe3.jpg",
-  "/src/assets/hero/lapangan2.jpg",
-  "/src/assets/fotokbe4.jpg",
+  "/assets/hero/lapangan1.jpg",
+  "/assets/hero/rekrutmen.jpg",
+  "/assets/hero/fotokbe3.jpg",
+  "/assets/hero/lapangan2.jpg",
+  "/assets/fotokbe4.jpg",
 ];
 
 const HeroSection = () => {
