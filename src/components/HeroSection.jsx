@@ -5,7 +5,7 @@ const images = [
   "/assets/hero/lapangan1.jpg",
   "/assets/hero/rekrutmen.jpg",
   "/assets/hero/fotokbe3.jpg",
-  "/assets/hero/lapangan2.jpg",
+  "/assets/hero/safetytalk.jpg",
   "/assets/fotokbe4.jpg",
 ];
 
@@ -154,7 +154,7 @@ const HeroSection = () => {
               key={index}
               src={src}
               alt={`Slide ${index}`}
-              className={`rounded-lg shadow-lg w-full object-cover absolute top-0 left-0 transition-opacity duration-[1200ms]
+              className={`rounded-lg shadow-lg w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-[1200ms]
         ${
           index === currentIndex && imageVisible
             ? "opacity-100 relative"

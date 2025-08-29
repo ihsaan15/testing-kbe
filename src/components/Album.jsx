@@ -9,19 +9,19 @@ import React, { useEffect, useRef, useState } from "react";
 const photos = [
   {
     id: 1,
-    src: "/assets/Technicians_Opencut_Coal_Mine.png",
-    title: "Proyek Penambangan",
-    description: "Kegiatan operasional proyek penambangan tahap pertama.",
+    src: "/assets/timrambu1.jpg",
+    title: "Tim Rambu Saat Dilapangan",
+    description: "Tim dan Mobil Operasional Lapangan.",
   },
   {
     id: 2,
-    src: "/assets/lapangan2.jpg",
-    title: "Tim Profesional",
-    description: "Tim profesional kami saat meeting lapangan.",
+    src: "/assets/pasangrambu1.jpg",
+    title: "Pemasangan Rambu",
+    description: "Tim Pemasangan Rambu/Patok saat di lapangan.",
   },
   {
     id: 3,
-    src: "/assets/Agin-8-1.jpg",
+    src: "/assets/safetytalk.jpg",
     title: "Keselamatan Kerja",
     description: "Penekanan pentingnya keselamatan kerja di lapangan.",
   },
@@ -33,15 +33,16 @@ const photos = [
   },
   {
     id: 5,
-    src: "/assets/fotosampleair.jpg",
-    title: "Area Tambang",
-    description: "Pemandangan area tambang yang sedang beroperasi.",
+    src: "/assets/kolamkbe1.jpg",
+    title: "Area Kolam",
+    description:
+      "Layanan pengelolaan air di kolam kolam pengendapan untuk mengendalikan",
   },
   {
     id: 6,
-    src: "/assets/136-lakevermont-2021-approved-048-hr-jpg.jpg",
-    title: "Rapat Strategi",
-    description: "Rapat strategi perusahaan untuk pengembangan bisnis.",
+    src: "/assets/civil1.png",
+    title: "Tim Civil",
+    description: "Pembangunan skala kecil & pemeliharaan bangunan",
   },
 ];
 

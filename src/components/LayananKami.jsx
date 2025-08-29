@@ -2,32 +2,32 @@ import React, { useEffect, useRef } from "react";
 
 const services = [
   {
-    imgSrc: "/assets/fotosampletenagakerja.svg",
+    imgSrc: "/assets/rekrutmen.jpg",
     description:
       "Penyedia layanan jasa Tenaga Kerja ke berbagai perusahaan tambang batubara dan kontrak service",
   },
   {
-    imgSrc: "/assets/fotosampleair.jpg",
+    imgSrc: "/assets/kolamkbe1.jpg",
     description:
       "Layanan pengelolaan air di kolam kolam pengendapan untuk mengendalikan",
   },
   {
-    imgSrc: "/assets/fotosamplepermesin.svg",
+    imgSrc: "/assets/produksi1.png",
     description:
       "Layanan Permesinan, Resurfacing, kroming, line boring sandblasting dan pengecatan",
   },
   {
-    imgSrc: "/assets/fotosampletrukair.jpg",
+    imgSrc: "/assets/fotosampletrukair.png",
     description:
       "Penyedia dan Pengoperasian truk untuk pengangkutan air dan sampah",
   },
   {
-    imgSrc: "/assets/fotosampleudara.svg",
+    imgSrc: "/assets/sampleudara1.png",
     description:
       "Menyediakan pengambilan sampel kuantitas udara ambien, pengambilan sampel emisi gas , dan analisis",
   },
   {
-    imgSrc: "/assets/fotosamplebangunan.svg",
+    imgSrc: "/assets/civil2.png",
     description:
       "Pembangunan skala kecil & pemeliharaan bangunan seperti perbaikan lending katup, tandon,y dll.",
   },
