@@ -54,7 +54,7 @@ const Footer = () => {
               </li>
               <li>
                 <a
-                  href="//lowongan-kerja"
+                  href="/lowongan-kerja"
                   className="hover:text-white transition-colors"
                 >
                   Lowongan
