@@ -5,8 +5,8 @@ const Footer = () => {
   return (
     <footer className="bg-[#0e0220] text-gray-400 py-10">
       <div className="max-w-8xl mx-auto px-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 text-center sm:text-left mb-8 md:mb-10">
-          <div className="mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 text-center sm:text-left mb-8 md:mb-10 md:ml-14 ">
+          <div className="mx-auto ">
             <h3 className="text-xl font-bold text-white mb-3">
               PT. Kaltim Banua Etam
             </h3>
