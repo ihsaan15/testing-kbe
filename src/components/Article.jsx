@@ -86,9 +86,82 @@ function useInView(ref, options = {}) {
 }
 
 /* -------------------------
+   Component: OptimizedImage
+   ------------------------- */
+const OptimizedImage = ({ src, alt, className, ...props }) => {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  return (
+    <div className={`relative overflow-hidden ${className}`} {...props}>
+      {/* Loading placeholder */}
+      {!loaded && !error && (
+        <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+          <div className="text-gray-400 text-xs">Loading...</div>
+        </div>
+      )}
+
+      {/* Error placeholder */}
+      {error && (
+        <div className="absolute inset-0 bg-gray-200 flex items-center justify-center">
+          <div className="text-gray-500 text-xs">No image</div>
+        </div>
+      )}
+
+      {/* Actual image */}
+      <img
+        src={src}
+        alt={alt}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${
+          loaded ? "opacity-100" : "opacity-0"
+        }`}
+        loading="lazy"
+        onLoad={() => setLoaded(true)}
+        onError={() => {
+          setError(true);
+          setLoaded(true);
+        }}
+      />
+    </div>
+  );
+};
+
+/* -------------------------
+   Component: SkeletonCard
+   ------------------------- */
+const SkeletonCard = () => (
+  <div className="bg-white rounded-lg shadow p-4 flex flex-col md:flex-row gap-4 animate-pulse">
+    <div className="w-full md:w-40 flex-shrink-0">
+      <div className="w-full h-28 md:h-32 bg-gray-200 rounded-md"></div>
+    </div>
+    <div className="flex-1 flex flex-col">
+      <div className="flex-1">
+        <div className="h-6 bg-gray-200 rounded mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded mb-1"></div>
+        <div className="h-4 bg-gray-200 rounded mb-1 w-3/4"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      </div>
+      <div className="flex items-center justify-between mt-2">
+        <div>
+          <div className="h-4 bg-gray-200 rounded mb-1 w-20"></div>
+          <div className="h-3 bg-gray-200 rounded w-16"></div>
+        </div>
+        <div className="h-8 bg-gray-200 rounded w-16"></div>
+      </div>
+    </div>
+  </div>
+);
+
+/* -------------------------
    Component: FadeInSection
    ------------------------- */
-const FadeInSection = ({ children, className = "", threshold, rootMargin }) => {
+const FadeInSection = ({
+  children,
+  className = "",
+  threshold,
+  rootMargin,
+  delay = 0,
+}) => {
   const ref = useRef(null);
   const prefersReduced = usePrefersReducedMotion();
   const inView = useInView(ref, { threshold, rootMargin });
@@ -103,7 +176,7 @@ const FadeInSection = ({ children, className = "", threshold, rootMargin }) => {
   }
 
   const base =
-    "transform transition-opacity transition-transform duration-700 ease-out will-change-transform";
+    "transform transition-all duration-700 ease-out will-change-transform";
   const hidden = "opacity-0 translate-y-6";
   const visible = "opacity-100 translate-y-0";
 
@@ -111,6 +184,9 @@ const FadeInSection = ({ children, className = "", threshold, rootMargin }) => {
     <div
       ref={ref}
       className={`${className} ${base} ${inView ? visible : hidden}`}
+      style={{
+        transitionDelay: inView ? `${delay}ms` : "0ms",
+      }}
       aria-hidden={!inView}
     >
       {children}
@@ -125,6 +201,7 @@ const ArticlePage = () => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedArticle, setSelectedArticle] = useState(null);
+  const [contentLoaded, setContentLoaded] = useState(false);
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -136,20 +213,46 @@ const ArticlePage = () => {
         }
         const data = await response.json();
         setArticles(data);
+
+        // Delay sedikit untuk smooth transition
+        setTimeout(() => {
+          setContentLoaded(true);
+        }, 100);
       } catch (error) {
         console.error("Error fetching articles:", error);
+        setContentLoaded(true);
       } finally {
-        setLoading(false);
+        setTimeout(() => {
+          setLoading(false);
+        }, 300);
       }
     };
 
     fetchArticles();
   }, []);
 
+  // Loading screen dengan smooth transition
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-xl">
-        Memuat Artikel...
+      <div className="min-h-screen bg-gray-50 font-sans">
+        {/* Header skeleton */}
+        <div className="bg-gradient-to-r from-green-800 to-teal-600 py-12 px-6 text-center">
+          <div className="animate-pulse">
+            <div className="h-10 bg-white/20 rounded mx-auto mb-4 w-48 mt-12"></div>
+            <div className="h-6 bg-white/10 rounded mx-auto w-96 max-w-full"></div>
+          </div>
+        </div>
+
+        {/* Content skeleton */}
+        <main className="max-w-5xl mx-auto mt-8 px-4 pb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[...Array(6)].map((_, idx) => (
+              <FadeInSection key={idx} delay={idx * 100}>
+                <SkeletonCard />
+              </FadeInSection>
+            ))}
+          </div>
+        </main>
       </div>
     );
   }
@@ -167,7 +270,7 @@ const ArticlePage = () => {
             </p>
             <button
               onClick={() => setSelectedArticle(null)}
-              className="mt-6 inline-flex items-center gap-2 bg-white text-green-800 font-semibold px-4 py-2 rounded-full hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-white"
+              className="mt-6 inline-flex items-center gap-2 bg-white text-green-800 font-semibold px-4 py-2 rounded-full hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-white transition-all duration-200 hover:scale-105"
               aria-label="Kembali ke daftar artikel"
             >
               ← Kembali
@@ -178,17 +281,16 @@ const ArticlePage = () => {
         <main className="max-w-5xl mx-auto -mt-8 pb-12 px-4">
           <article className="bg-white shadow-md rounded-lg overflow-hidden">
             {selectedArticle.image && (
-              <FadeInSection className="w-full">
-                <img
+              <FadeInSection className="w-full" delay={200}>
+                <OptimizedImage
                   src={`${API_BASE_URL}${selectedArticle.image}`}
                   alt={selectedArticle.title}
-                  className="w-full h-64 object-cover"
-                  loading="lazy"
+                  className="w-full h-64"
                 />
               </FadeInSection>
             )}
             <div className="p-8">
-              <FadeInSection>
+              <FadeInSection delay={400}>
                 <div className="prose prose-lg max-w-none">
                   {renderContentAsParagraphs(selectedArticle.content)}
                 </div>
@@ -202,7 +304,10 @@ const ArticlePage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      <FadeInSection className="bg-gradient-to-r from-green-800 to-teal-600 text-white py-12 px-6 text-center">
+      <FadeInSection
+        className="bg-gradient-to-r from-green-800 to-teal-600 text-white py-12 px-6 text-center"
+        delay={0}
+      >
         <h1 className="text-3xl md:text-4xl font-bold mb-2 mt-12">Artikel</h1>
         <p className="text-lg max-w-2xl mx-auto">
           Dapatkan informasi terkini seputar industri tambang, keselamatan
@@ -212,16 +317,19 @@ const ArticlePage = () => {
 
       <main className="max-w-5xl mx-auto mt-8 px-4 pb-16">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {articles.map((article) => (
-            <FadeInSection key={article.id} className="w-full">
-              <article className="bg-white rounded-lg shadow p-4 flex flex-col md:flex-row gap-4">
+          {articles.map((article, index) => (
+            <FadeInSection
+              key={article.id}
+              className="w-full"
+              delay={contentLoaded ? index * 100 : 0}
+            >
+              <article className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 p-4 flex flex-col md:flex-row gap-4 hover:-translate-y-1">
                 <div className="w-full md:w-40 flex-shrink-0">
                   {article.image ? (
-                    <img
+                    <OptimizedImage
                       src={`${API_BASE_URL}${article.image}`}
                       alt={`${article.title} - thumbnail`}
-                      className="w-full h-28 md:h-32 object-cover rounded-md"
-                      loading="lazy"
+                      className="w-full h-28 md:h-32 rounded-md"
                     />
                   ) : (
                     <div className="w-full h-28 md:h-32 bg-gray-200 rounded-md flex items-center justify-center text-gray-500">
@@ -231,7 +339,7 @@ const ArticlePage = () => {
                 </div>
                 <div className="flex-1 flex flex-col">
                   <div className="flex-1">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-1">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-1 hover:text-green-600 transition-colors duration-200">
                       {article.title}
                     </h2>
                     <p className="text-gray-700 mb-3 line-clamp-3">
@@ -245,8 +353,8 @@ const ArticlePage = () => {
                     </div>
                     <button
                       onClick={() => setSelectedArticle(article)}
-                      className="inline-flex items-center gap-2 bg-green-600 text-white px-3 py-1.5 rounded-md text-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-300"
-                      aria-label={`Buka artikel ${article.title}`}
+                      className="inline-flex items-center gap-2 bg-green-600 text-white px-3 py-1.5 rounded-md text-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-300 transition-all duration-200 hover:scale-105"
+                      aria-label={`Baca artikel ${article.title}`}
                     >
                       Baca
                     </button>
