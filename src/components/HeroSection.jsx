@@ -14,8 +14,20 @@ const HeroSection = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [contentVisible, setContentVisible] = useState(false);
   const [imageVisible, setImageVisible] = useState(false);
+  const [backgroundLoaded, setBackgroundLoaded] = useState(false);
 
   useEffect(() => {
+    // Preload background image
+    const img = new Image();
+    img.onload = () => {
+      setBackgroundLoaded(true);
+    };
+    img.onerror = () => {
+      // Jika gagal load, tetap lanjutkan
+      setBackgroundLoaded(true);
+    };
+    img.src = backgroundUrl;
+
     // aktifkan transisi konten dan foto setelah komponen mount
     setContentVisible(true);
     setTimeout(() => setImageVisible(true), 200); // delay agar sinkron dengan konten
@@ -24,21 +36,33 @@ const HeroSection = () => {
       setCurrentIndex((prev) => (prev + 1) % images.length);
     }, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [backgroundUrl]);
 
   const baseTransitionClasses =
     "transition-all duration-1000 ease-in-out transform";
 
   return (
     <section
-      className="bg-cover bg-center min-h-screen flex items-center px-4 sm:px-8 py-10 sm:py-16"
-      style={{ backgroundImage: `url(${backgroundUrl})` }}
+      className={`bg-cover bg-center min-h-screen flex items-center px-4 sm:px-8 py-10 sm:py-16 transition-opacity duration-500 ${
+        backgroundLoaded ? "opacity-100" : "opacity-0"
+      }`}
+      style={{
+        backgroundImage: backgroundLoaded ? `url(${backgroundUrl})` : "none",
+        backgroundColor: backgroundLoaded ? "transparent" : "#1a1a1a", // Fallback color
+      }}
     >
-      <div className="container mx-auto hero-container flex flex-col lg:flex-row items-center gap-8 w-full max-w-[1200px]">
+      {/* Loading overlay saat background belum dimuat */}
+      {!backgroundLoaded && (
+        <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+          <div className="text-white text-lg">Loading...</div>
+        </div>
+      )}
+
+      <div className="container mx-auto hero-container flex flex-col lg:flex-row items-center gap-8 w-full max-w-[1200px] relative z-10">
         {/* Left Content */}
         <div
           className={`flex-1 max-w-full sm:max-w-md lg:max-w-lg text-center lg:text-left px-2 sm:px-0 ${baseTransitionClasses} ${
-            contentVisible
+            contentVisible && backgroundLoaded
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-6"
           }`}
@@ -49,7 +73,7 @@ const HeroSection = () => {
               src="/assets/logo/logo-kbr-copy.png"
               alt="Logo PT Kaltim Banua Etam"
               className={`w-12 h-12 object-contain border-2 rounded-md bg-white ${baseTransitionClasses} ${
-                contentVisible
+                contentVisible && backgroundLoaded
                   ? "opacity-100 translate-y-0"
                   : "opacity-0 translate-y-6"
               }`}
@@ -57,7 +81,7 @@ const HeroSection = () => {
             />
             <span
               className={`font-semibold text-white text-sm sm:text-base ${baseTransitionClasses} ${
-                contentVisible
+                contentVisible && backgroundLoaded
                   ? "opacity-100 translate-y-0"
                   : "opacity-0 translate-y-6"
               }`}
@@ -69,7 +93,7 @@ const HeroSection = () => {
 
           <h1
             className={`text-3xl sm:text-4xl md:text-5xl hero-title font-extrabold text-white leading-snug max-w-full sm:max-w-xl mx-auto lg:mx-0 break-words ${baseTransitionClasses} ${
-              contentVisible
+              contentVisible && backgroundLoaded
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-6"
             }`}
@@ -81,7 +105,7 @@ const HeroSection = () => {
 
           <p
             className={`text-white max-w-full sm:max-w-md mx-auto lg:mx-0 mt-4 text-sm sm:text-base leading-relaxed break-words ${baseTransitionClasses} ${
-              contentVisible
+              contentVisible && backgroundLoaded
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-6"
             }`}
@@ -94,7 +118,7 @@ const HeroSection = () => {
 
           <div
             className={`flex flex-col sm:flex-row justify-center lg:justify-start space-y-3 sm:space-y-0 sm:space-x-4 mt-6 max-w-xs mx-auto lg:mx-0 ${baseTransitionClasses} ${
-              contentVisible
+              contentVisible && backgroundLoaded
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-6"
             }`}
@@ -116,7 +140,7 @@ const HeroSection = () => {
 
           <div
             className={`flex flex-col sm:flex-row space-y-6 sm:space-y-0 sm:space-x-10 mt-8 sm:mt-12 justify-center lg:justify-start ${baseTransitionClasses} ${
-              contentVisible
+              contentVisible && backgroundLoaded
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-6"
             }`}
@@ -148,28 +172,26 @@ const HeroSection = () => {
         </div>
 
         {/* Right Content - Slider */}
-        <div className="flex-1 relative max-w-full sm:max-w-lg px-4 sm:px-0 lg:mt-10 lg:ml-36  ">
+        <div className="flex-1 relative max-w-full sm:max-w-lg px-4 sm:px-0 lg:mt-10 lg:ml-36">
           {images.map((src, index) => (
             <img
               key={index}
               src={src}
               alt={`Slide ${index}`}
-              className={`rounded-lg shadow-lg w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-[1200ms]
-        ${
-          index === currentIndex && imageVisible
-            ? "opacity-100 relative"
-            : "opacity-0"
-        }
-      `}
+              className={`rounded-lg shadow-lg w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-[1200ms] ${
+                index === currentIndex && imageVisible
+                  ? "opacity-100 relative"
+                  : "opacity-0"
+              }`}
               style={{
                 maxHeight: "320px",
-              }} /* ukuran default untuk layar kecil/menengah; min-width:1920 di index.css akan override */
+              }}
             />
           ))}
 
           <div
             className={`absolute bottom-4 left-4 bg-white rounded-md shadow-md p-3 flex items-center space-x-3 w-max max-w-xs ${baseTransitionClasses} ${
-              contentVisible
+              contentVisible && backgroundLoaded
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-6"
             }`}
@@ -178,7 +200,7 @@ const HeroSection = () => {
             <img src="/assets/tmng.svg" alt="Logo" className="w-6 h-6" />
             <div>
               <div className="font-semibold text-sm text-gray-900">
-                100 % Safety Certified
+                100% Safety Certified
               </div>
               <div className="text-xs text-gray-600">
                 Standar Keselamatan Internasional
