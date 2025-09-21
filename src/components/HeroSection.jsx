@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 const images = [
@@ -14,63 +14,17 @@ const HeroSection = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [contentVisible, setContentVisible] = useState(false);
   const [imageVisible, setImageVisible] = useState(false);
-  const [imagesLoaded, setImagesLoaded] = useState(false);
-  const [loadedImages, setLoadedImages] = useState(new Set());
-
-  // Preload semua gambar
-  const preloadImages = useCallback(() => {
-    let loadedCount = 0;
-    const imagePromises = images.map((src) => {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-          loadedCount++;
-          setLoadedImages((prev) => new Set([...prev, src]));
-          resolve(src);
-        };
-        img.onerror = reject;
-        img.src = src;
-      });
-    });
-
-    Promise.all(imagePromises)
-      .then(() => {
-        setImagesLoaded(true);
-      })
-      .catch((error) => {
-        console.error("Error loading images:", error);
-        // Tetap lanjutkan meskipun ada error
-        setImagesLoaded(true);
-      });
-  }, []);
 
   useEffect(() => {
-    // Mulai preload gambar
-    preloadImages();
-
-    // Aktifkan transisi konten
+    // aktifkan transisi konten dan foto setelah komponen mount
     setContentVisible(true);
-
-    // Aktifkan image visibility setelah gambar dimuat
-    const imageTimer = setTimeout(() => {
-      setImageVisible(true);
-    }, 200);
-
-    return () => {
-      clearTimeout(imageTimer);
-    };
-  }, [preloadImages]);
-
-  useEffect(() => {
-    // Mulai slideshow hanya setelah gambar dimuat
-    if (!imagesLoaded) return;
+    setTimeout(() => setImageVisible(true), 200); // delay agar sinkron dengan konten
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % images.length);
-    }, 3000); // Perpanjang durasi untuk transisi yang lebih smooth
-
+    }, 2000);
     return () => clearInterval(interval);
-  }, [imagesLoaded]);
+  }, []);
 
   const baseTransitionClasses =
     "transition-all duration-1000 ease-in-out transform";
@@ -194,67 +148,28 @@ const HeroSection = () => {
         </div>
 
         {/* Right Content - Slider */}
-        <div className="flex-1 relative max-w-full sm:max-w-lg px-4 sm:px-0 lg:mt-10 lg:ml-36">
-          {/* Loading placeholder */}
-          {!imagesLoaded && (
-            <div
-              className="w-full bg-gray-300 animate-pulse rounded-lg flex items-center justify-center"
-              style={{ height: "320px" }}
-            >
-              <div className="text-gray-500">Loading...</div>
-            </div>
-          )}
+        <div className="flex-1 relative max-w-full sm:max-w-lg px-4 sm:px-0 lg:mt-10 lg:ml-36  ">
+          {images.map((src, index) => (
+            <img
+              key={index}
+              src={src}
+              alt={`Slide ${index}`}
+              className={`rounded-lg shadow-lg w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-[1200ms]
+        ${
+          index === currentIndex && imageVisible
+            ? "opacity-100 relative"
+            : "opacity-0"
+        }
+      `}
+              style={{
+                maxHeight: "320px",
+              }} /* ukuran default untuk layar kecil/menengah; min-width:1920 di index.css akan override */
+            />
+          ))}
 
-          {/* Image container dengan aspect ratio yang konsisten */}
-          <div
-            className="relative overflow-hidden rounded-lg shadow-lg"
-            style={{ height: "320px" }}
-          >
-            {images.map((src, index) => (
-              <div
-                key={index}
-                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                  index === currentIndex && imageVisible && imagesLoaded
-                    ? "opacity-100"
-                    : "opacity-0"
-                }`}
-              >
-                <img
-                  src={src}
-                  alt={`Slide ${index + 1}`}
-                  className="w-full h-full object-cover"
-                  loading="eager" // Prioritas loading untuk gambar pertama
-                  style={{
-                    display: imagesLoaded ? "block" : "none",
-                    objectPosition: "center center",
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Dots indicator */}
-          {imagesLoaded && (
-            <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 flex space-x-2">
-              {images.map((_, index) => (
-                <button
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    index === currentIndex
-                      ? "bg-white w-6"
-                      : "bg-white/50 hover:bg-white/70"
-                  }`}
-                  onClick={() => setCurrentIndex(index)}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Safety badge */}
           <div
             className={`absolute bottom-4 left-4 bg-white rounded-md shadow-md p-3 flex items-center space-x-3 w-max max-w-xs ${baseTransitionClasses} ${
-              contentVisible && imagesLoaded
+              contentVisible
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-6"
             }`}
@@ -263,7 +178,7 @@ const HeroSection = () => {
             <img src="/assets/tmng.svg" alt="Logo" className="w-6 h-6" />
             <div>
               <div className="font-semibold text-sm text-gray-900">
-                100% Safety Certified
+                100 % Safety Certified
               </div>
               <div className="text-xs text-gray-600">
                 Standar Keselamatan Internasional
