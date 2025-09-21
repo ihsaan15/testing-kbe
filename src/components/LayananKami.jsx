@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const services = [
   {
@@ -37,12 +37,18 @@ const LayananKami = () => {
   const titleRef = useRef(null);
   const descRef = useRef(null);
   const cardsRef = useRef([]);
+  const [imagesLoaded, setImagesLoaded] = useState(new Set());
 
   // helper untuk menyimpan refs dari cards
   const addCardRef = (el) => {
     if (el && !cardsRef.current.includes(el)) {
       cardsRef.current.push(el);
     }
+  };
+
+  // Handle image loading
+  const handleImageLoad = (imgSrc) => {
+    setImagesLoaded((prev) => new Set([...prev, imgSrc]));
   };
 
   useEffect(() => {
@@ -125,7 +131,7 @@ const LayananKami = () => {
   }, []);
 
   return (
-    <div className="w-full bg-gray-100 ">
+    <div className="w-full bg-gray-100">
       <div
         className="max-w-7xl mx-auto p-6 md:p-12 font-sans text-gray-900 layanankami"
         id="layanankami"
@@ -145,22 +151,68 @@ const LayananKami = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-full mx-auto services-grid">
           {services.map(({ imgSrc, description }, idx) => {
+            const isImageLoaded = imagesLoaded.has(imgSrc);
+
             return (
               <div
                 key={idx}
                 ref={addCardRef}
                 data-index={idx}
-                className="flex bg-white shadow rounded-lg overflow-hidden w-full service-card"
+                className="group bg-white shadow-md hover:shadow-xl rounded-lg overflow-hidden w-full service-card transition-all duration-300 hover:-translate-y-1"
               >
-                <img
-                  src={imgSrc}
-                  alt={`layanan-${idx}`}
-                  className="w-32 object-cover service-img"
-                  loading="lazy"
-                />
-                <p className="p-4 text-gray-800 flex items-center service-desc">
-                  {description}
-                </p>
+                {/* Image Container - Lebih besar dan responsif */}
+                <div className="relative w-full h-48 md:h-52 lg:h-48 overflow-hidden">
+                  {/* Loading placeholder */}
+                  {!isImageLoaded && (
+                    <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+                      <div className="text-gray-400 text-sm">Loading...</div>
+                    </div>
+                  )}
+
+                  <img
+                    src={imgSrc}
+                    alt={`Layanan ${idx + 1}`}
+                    className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
+                      isImageLoaded ? "opacity-100" : "opacity-0"
+                    }`}
+                    loading="lazy"
+                    onLoad={() => handleImageLoad(imgSrc)}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = `https://placehold.co/400x300/e5e7eb/9ca3af?text=Service+${
+                        idx + 1
+                      }`;
+                      handleImageLoad(imgSrc);
+                    }}
+                  />
+
+                  {/* Overlay gradient untuk better text readability */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
+
+                {/* Content */}
+                <div className="p-5">
+                  <p className="text-gray-800 text-sm leading-relaxed service-desc">
+                    {description}
+                  </p>
+
+                  {/* Optional: Add a subtle indicator */}
+                  <div className="mt-4 flex items-center text-green-600 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <svg
+                      className="w-3 h-3 ml-1 transform group-hover:translate-x-1 transition-transform duration-200"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
             );
           })}

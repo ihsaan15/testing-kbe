@@ -173,21 +173,21 @@ const HeroSection = () => {
 
         {/* Right Content - Slider */}
         <div className="flex-1 relative max-w-full sm:max-w-lg px-4 sm:px-0 lg:mt-10 lg:ml-36">
-          {images.map((src, index) => (
-            <img
-              key={index}
-              src={src}
-              alt={`Slide ${index}`}
-              className={`rounded-lg shadow-lg w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-[1200ms] ${
-                index === currentIndex && imageVisible
-                  ? "opacity-100 relative"
-                  : "opacity-0"
-              }`}
-              style={{
-                maxHeight: "320px",
-              }}
-            />
-          ))}
+          {/* Container dengan ukuran tetap untuk mencegah layout shift */}
+          <div className="relative w-full h-80 overflow-hidden rounded-lg shadow-lg">
+            {images.map((src, index) => (
+              <img
+                key={index}
+                src={src}
+                alt={`Slide ${index}`}
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1200ms] ${
+                  index === currentIndex && imageVisible
+                    ? "opacity-100"
+                    : "opacity-0"
+                }`}
+              />
+            ))}
+          </div>
 
           <div
             className={`absolute bottom-4 left-4 bg-white rounded-md shadow-md p-3 flex items-center space-x-3 w-max max-w-xs ${baseTransitionClasses} ${
